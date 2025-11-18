@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 import userModel from '../models/userModel.js';
 import generateToken from '../utils/token.js';
+import transporter from '../config/nodemailer.js';
 
 export const signup = async (req, res) => {
     const { name, email, password } = req.body;
@@ -26,11 +27,21 @@ export const signup = async (req, res) => {
             email
         })
 
-        if (newUser) {
+     
             await newUser.save();
             generateToken(newUser._id, res);
-            return res.status(200).json({ success: true, message: "Signup successful" })
-        }
+
+            // welcome email
+            const mailOptions = {
+                from: process.env.SENDER_EMAIL,
+                to: email,
+                subject: "Welcome to the great karikalan majic show",
+                text: ` Hi ${name}! Welcome to the great karikalan majic show. Your account has been created with the email id: ${email}`
+            }
+            await transporter.sendMail(mailOptions);
+
+            return res.status(201).json({ success: true, message: "Signup successful" })
+        
 
 
     } catch (error) {
