@@ -5,3 +5,5 @@ node_modules/
 .env
 .env.local
 .env.*.local
+
+server/config/nodemailer.js
