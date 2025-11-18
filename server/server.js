@@ -18,6 +18,7 @@ app.use(cookieParser());
 app.get('/', (req , res)=> res.send('API WORKING'));
 app.use('/api/auth/', authRoutes);
 
+console.log('setup was done');
 app.listen(port , ()=>{
     console.log(`Server is running on this port: ${port}`)
 })
