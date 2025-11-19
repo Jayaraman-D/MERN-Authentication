@@ -3,7 +3,6 @@ import userModel from '../models/userModel.js';
 import generateToken from '../utils/token.js';
 import transporter from '../config/nodemailer.js';
 import crypto from "crypto";
-import { text } from 'stream/consumers';
 
 
 export const signup = async (req, res) => {
@@ -208,10 +207,48 @@ export const otpForPassword = async (req, res) => {
 
         await transporter.sendMail(mailOptions)
 
-        res.status(200).json({success: true, message:"OTP has been sent to your email"})
+        res.status(200).json({ success: true, message: "OTP has been sent to your email" })
 
-  } catch (error) {
+    } catch (error) {
         console.log(`Error occured in otp for Password controller: ${error.message}`);
+        res.status(500).json({ message: "Internal server error", success: false })
+    }
+}
+
+export const resetPassword = async (req, res) => {
+    const { email, otp, newpassword } = req.body;
+
+    if (!email || !otp || !newpassword) {
+        return res.status(400).json({ success: false, message: "Missing details" })
+    }
+
+    try {
+
+        const user = await userModel.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ success: false, message: "user not found" })
+        }
+
+        if (user.verifyOtp !== otp) {
+            return res.status(400).json({ success: false, message: "Invalid OTP" })
+        }
+
+        if (user.verifyOtpExprieAt < Date.now()) {
+            return res.status(400).json({ success: false, message: "OTP is expired" })
+        }
+
+        const hashedPassword = await bcrypt.hash(newpassword, 10);
+
+        user.password = hashedPassword
+        user.verifyOtp = '';
+        user.verifyOtpExprieAt = 0;
+
+        await user.save();
+
+        res.status(200).json({ success: true, message: "Password has been reset successfully" })
+
+    } catch (error) {
+        console.log(`Error occured in reset password controller: ${error.message}`);
         res.status(500).json({ message: "Internal server error", success: false })
     }
 }
