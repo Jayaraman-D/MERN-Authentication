@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs'
 import userModel from '../models/userModel.js';
 import generateToken from '../utils/token.js';
-import transporter from '../config/nodemailer.js';
+// import transporter from '../config/nodemailer.js';
 import crypto from "crypto";
 
 
