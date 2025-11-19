@@ -3,6 +3,7 @@ import userModel from '../models/userModel.js';
 import generateToken from '../utils/token.js';
 import transporter from '../config/nodemailer.js';
 import crypto from "crypto";
+import { text } from 'stream/consumers';
 
 
 export const signup = async (req, res) => {
@@ -93,7 +94,7 @@ export const logout = async (req, res) => {
 export const sendVerifyOtp = async (req, res) => {
     try {
 
-         const userId = req.user._id;
+        const userId = req.user._id;
 
         const user = await userModel.findById(userId);
         if (!user) {
@@ -130,8 +131,8 @@ export const sendVerifyOtp = async (req, res) => {
 
 export const verifyEmail = async (req, res) => {
 
-    const {otp } = req.body;
-     const userId = req.user._id;
+    const { otp } = req.body;
+    const userId = req.user._id;
     if (!userId || !otp) {
         return res.status(400).json({ success: false, message: "Missing details" })
     }
@@ -151,9 +152,9 @@ export const verifyEmail = async (req, res) => {
             return res.status(400).json({ success: false, message: "OTP has expired" })
         }
 
-            user.isAccountVerified = true;
-            user.verifyOtp = '';
-            user.verifyOtpExprieAt = 0        
+        user.isAccountVerified = true;
+        user.verifyOtp = '';
+        user.verifyOtpExprieAt = 0
 
         await user.save();
 
@@ -161,6 +162,56 @@ export const verifyEmail = async (req, res) => {
 
     } catch (error) {
         console.log(`Error occured in verify email controller: ${error.message}`);
+        res.status(500).json({ message: "Internal server error", success: false })
+    }
+}
+
+export const isAuthenticated = async (req, res) => {
+    try {
+
+        const userId = req.user._id;
+        const user = await userModel.findById(userId);
+
+        res.status(200).json({ success: true, message: "User is Authenticated", user })
+
+    } catch (error) {
+        console.log(`Error occured in isAuthenticated controller: ${error.message}`);
+        res.status(500).json({ message: "Internal server error", success: false })
+    }
+}
+
+export const otpForPassword = async (req, res) => {
+    const { email } = req.body;
+    if (!email) {
+        return res.status(400).json({ success: false, message: "Email is required" })
+    }
+    try {
+
+        const user = await userModel.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" })
+        }
+
+        const otp = crypto.randomInt(100000, 1000000).toString();
+        user.verifyOtp = otp;
+        user.verifyOtpExprieAt = Date.now() + 15 * 60 * 1000;
+
+        await user.save();
+
+        const mailOptions = {
+            from: process.env.SENDER_EMAIL,
+            to: user.email,
+            subject: "OTP for password reset",
+            text: `Your otp is: ${otp} for reset the password`
+        }
+
+
+        await transporter.sendMail(mailOptions)
+
+        res.status(200).json({success: true, message:"OTP has been sent to your email"})
+
+  } catch (error) {
+        console.log(`Error occured in otp for Password controller: ${error.message}`);
         res.status(500).json({ message: "Internal server error", success: false })
     }
 }
