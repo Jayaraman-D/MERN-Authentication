@@ -1,11 +1,43 @@
 import React, { useState } from 'react'
 import { assets } from '../assets/assets'
+import baseUrl from '../utils/url.js';
+import axios from 'axios'
+import { toast } from 'react-toastify'
 
 const Login = () => {
-    const [state, setState] = useState('signup')
+    const [state, setState] = useState('signup');
+    const [email, setEmail] = useState('');
+    const [name, setName] = useState('');
+    const [password, setPassword] = useState('')
+
+    const handleSignupButton = async () => {
+        if (email.trim() === '' || name.trim() === '' || password.trim() === '') {
+            toast.error('Please fill all the fields');
+            return
+        }
+        if (password.length < 6) {
+            toast.error('Minimum 6 characters are required');
+            return
+        }
+        try {
+            const res = await axios.post(`${baseUrl}/api/auth/signup`, { email, password, name }, { withCredentials: true });
+            console.log(res);
+            toast.success(res.data?.message);
+
+        } catch (error) {
+            console.log(`Error occured in handle signup: ${error.message}`)
+            toast.error(error.response?.data?.message || "Signup failed")
+        }
+
+    }
+
+    const handleLoginButton = () => {
+        console.log('Login button is clicked');
+        console.log(email, password);
+    }
 
     return (
-       <div className='flex items-center justify-center min-h-screen px-6 sm:px-0 bg-linear-to-br from-blue-200 to-purple-400'>
+        <div className='flex items-center justify-center min-h-screen px-6 sm:px-0 bg-linear-to-br from-blue-200 to-purple-400'>
 
 
             {/* Logo */}
@@ -31,7 +63,7 @@ const Login = () => {
                 </div>
 
                 {/* Form */}
-                <form>
+                <form onSubmit={(e) => e.preventDefault()}>
 
                     {/* Full Name - only for signup */}
                     {state === 'signup' && (
@@ -42,6 +74,8 @@ const Login = () => {
                                 placeholder='Full Name'
                                 required
                                 className='bg-transparent outline-none text-white w-full'
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
                             />
                         </div>
                     )}
@@ -54,6 +88,8 @@ const Login = () => {
                             placeholder='Email'
                             required
                             className='bg-transparent outline-none text-white w-full'
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                         />
                     </div>
 
@@ -65,6 +101,8 @@ const Login = () => {
                             placeholder='Password'
                             required
                             className='bg-transparent outline-none text-white w-full'
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                         />
                     </div>
 
@@ -74,7 +112,8 @@ const Login = () => {
                         </p>
                     )}
 
-                    <button className='w-full py-2.5 rounded-full bg-linear-to-br from-indigo-500 to-indigo-900 text-white font-medium capitalize cursor-pointer'>
+                    <button className='w-full py-2.5 rounded-full bg-linear-to-br from-indigo-500 to-indigo-900 text-white font-medium capitalize cursor-pointer'
+                        onClick={state === "signup" ? handleSignupButton : handleLoginButton}>
                         {state}
                     </button>
                 </form>
