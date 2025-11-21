@@ -3,37 +3,71 @@ import { assets } from '../assets/assets'
 import baseUrl from '../utils/url.js';
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
     const [state, setState] = useState('signup');
     const [email, setEmail] = useState('');
     const [name, setName] = useState('');
-    const [password, setPassword] = useState('')
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleSignupButton = async () => {
-        if (email.trim() === '' || name.trim() === '' || password.trim() === '') {
-            toast.error('Please fill all the fields');
-            return
+    const navigate = useNavigate();
+
+    const handleInputs = (fields) => {
+        const { email, name, password, isSignup } = fields;
+
+        if (!email.trim() || !password.trim() || (isSignup && !name.trim())) {
+            toast.error("All fields are required.");
+            return false;
         }
+        const emailRegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegExp.test(email)) {
+            toast.error("Invalid Email format...")
+            return false;
+        }
+
         if (password.length < 6) {
-            toast.error('Minimum 6 characters are required');
-            return
+            toast.error("Password must be at least 6 characters.");
+            return false;
         }
-        try {
-            const res = await axios.post(`${baseUrl}/api/auth/signup`, { email, password, name }, { withCredentials: true });
-            console.log(res);
-            toast.success(res.data?.message);
-
-        } catch (error) {
-            console.log(`Error occured in handle signup: ${error.message}`)
-            toast.error(error.response?.data?.message || "Signup failed")
-        }
-
+        setLoading(true);
+        return true
     }
 
-    const handleLoginButton = () => {
-        console.log('Login button is clicked');
-        console.log(email, password);
+
+
+    const handleSubmit = async () => {
+
+        const isSignup = state === 'signup'
+        const isValid = handleInputs({ email, password, name, isSignup });
+        if (!isValid) return;
+
+        setLoading(true)
+
+        try {
+
+            const endpoint = isSignup ? "/signup" : "/login";
+            const payload = isSignup
+                ? { email, password, name }
+                : { email, password };
+
+            const res = await axios.post(`${baseUrl}/api/auth${endpoint}`, payload, { withCredentials: true });
+            console.log(res);
+            toast.success(res.data?.message);
+            setEmail('');
+            setPassword('');
+            if (isSignup) setName('');
+
+            navigate('/');
+
+        } catch (error) {
+            console.log(`Error occured in handle signup: ${error.message} with status code: ${error.response?.status}`)
+            toast.error(error.response?.data?.message || "Something went wrong")
+        }
+        finally {
+            setLoading(false)
+        }
     }
 
     return (
@@ -63,7 +97,9 @@ const Login = () => {
                 </div>
 
                 {/* Form */}
-                <form onSubmit={(e) => e.preventDefault()}>
+                <form onSubmit={(e) => {
+                    e.preventDefault();
+                }}>
 
                     {/* Full Name - only for signup */}
                     {state === 'signup' && (
@@ -112,9 +148,13 @@ const Login = () => {
                         </p>
                     )}
 
-                    <button className='w-full py-2.5 rounded-full bg-linear-to-br from-indigo-500 to-indigo-900 text-white font-medium capitalize cursor-pointer'
-                        onClick={state === "signup" ? handleSignupButton : handleLoginButton}>
-                        {state}
+                    <button
+                        type='button'
+                        disabled={loading}
+                        onClick={handleSubmit}
+                        className="cursor-pointer w-full py-2.5 rounded-full bg-linear-to-br  from-indigo-500 to-indigo-900 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {loading ? "Please Wait..." : state}
                     </button>
                 </form>
 
