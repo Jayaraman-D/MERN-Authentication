@@ -252,3 +252,13 @@ export const resetPassword = async (req, res) => {
         res.status(500).json({ message: "Internal server error", success: false })
     }
 }
+
+export const verifyUser = async (req , res) => {
+    try {
+   res.status(200).json({message:"Verified the user", success: true});
+        
+    } catch (error) {
+        console.log(`Error occured in verify user controller: ${error.message}`);
+        res.status(500).json({ message: "Internal server error", success: false })
+    }
+}
